@@ -3,9 +3,9 @@ clc;
 close all;
 format long g
 
-stereoParam = dlmread('stereo_param10.txt');
-% stereoParam = dlmread('stereo_param_scene10.txt');
-% stereoParam = dlmread('stereo_param_test.txt');
+% stereoParam = dlmread('../res/stereo_param8.txt');
+% stereoParam = dlmread('../res/stereo_param10.txt');
+stereoParam = dlmread('../res/stereo_param_scene10.txt');
 left = stereoParam(:, 1:2);
 right = stereoParam(:, 3:4);
 
@@ -25,11 +25,12 @@ sampleCount = size(stereoParam, 1);
 %     vR = stereoParam(i, 4);
 %     A(i, :) = [uL*uR, uL*vR, uL, uR*vL, vL*vR, vL, uR, vR];
 % end
-% mat
+% 
 % 
 % FVec = A\(-ones(8,1));
 % F = vec2mat(FVec, 3)';
 % F(3,3) = 1;
+% F
 
 
 % Least Square Estimation (over 8 equations)
@@ -43,7 +44,6 @@ for i=1:sampleCount
 end
 
 [U, S, V] = svd(A);
-
 % Last column of V is the vector associated with the smallest eigenvalue
 FVec = V(:, end);
 F = reshape(FVec, 3, 3);
@@ -53,20 +53,23 @@ F = reshape(FVec, 3, 3);
 [FU, FD, FV] = svd(F);
 FD(3, 3) = 0;
 F = FU * FD * FV';
-FU
-FV
-FV = FV(:, 3) .* (1 ./ FV(3, 3))%left epipole
-FU = FU(:, 3) .* (1 ./ FU(3, 3))%right epipole
-
-
+F
+[minValue, minIndex] = min(diag(FD));
+FV = FV(:, minIndex) .* (1 ./ FV(3, 3));%left epipole
+FU = FU(:, minIndex) .* (1 ./ FU(3, 3));%right epipole
+disp('left epipole');
+disp(FV);
+disp('right epipole');
+disp(FU);
 
 % Draw left image with sampled points
-% leftImg = imread('res/sceneL.JPG');
-leftImg = imread('imL.png');
-% leftImg = rgb2gray(leftImg);
+leftImg = imread('../res/sceneL.JPG');
+% leftImg = imread('../res/imL.png');
+
 
 subplot(121);imshow(leftImg);
-title('left image');
+title('Left Image');
+% title(sprintf('Left epipole at (%f, %f)', FV(1), FV(2)));
 hold on;
 plot(stereoParam(:,1), stereoParam(:,2), 'go');
 hold off;
@@ -80,26 +83,24 @@ for i=1:sampleCount
     epipolarLinesL(i, 1:3) = pl';
 end
 points = lineToBorderPoints(epipolarLinesL, size(leftImg));
-line(points(:, [1,3])', points(:, [2,4])');
-
+line(points(:, [1,3])', points(:, [2,4])', 'LineWidth', 0.6);
 
 
 % Draw epipole on left image
-% plot(FV(1), FV(2), 'ro');
-
+plot(FV(1), FV(2), 'ro');
 
 
 % Draw right image with sample points
-% rightImg = imread('res/sceneR.JPG');
-rightImg = imread('imR.png');
-% rightImg = rgb2gray(rightImg);
+% rightImg = imread('../res/imR.png');
+rightImg = imread('../res/sceneR.JPG');
+
+
 subplot(122);imshow(rightImg);
-title('right image');
+title('Right Image');
+% title(sprintf('Right epipole at (%f, %f)', FU(1), FU(2)));
 hold on;
 plot(stereoParam(:,3), stereoParam(:,4), 'go');
 
-% Draw epipole on right image
-% plot(FU(1), FU(2), 'ro');
 
 % Draw Epipolar lines on right Image
 hold on;
@@ -112,29 +113,30 @@ for i=1:sampleCount
     epipolarLines(i, 1:3) = pr;
     
     right_epipolar_y = (-pr(3)-pr(1)*right_epipolar_x)/pr(2);
-    plot(right_epipolar_x, right_epipolar_y);
+    plot(right_epipolar_x, right_epipolar_y, 'LineWidth', 0.6);
 
 end
 % points = lineToBorderPoints(epipolarLines, size(rightImg));
 % line(points(:, [1,3])', points(:, [2,4])');
 
+% Draw epipole on right image
+plot(FU(1), FU(2), 'ro');
 
 hold off;
 
-truesize;
 
-
-% Calculate epipole
-[u,d] = eigs(F'*F)
-uu = u(:, 1)
+% Calculate epipoles 
+% Left epipole
+[u,d] = eigs(F'*F);
+[minVal, minIdx] = min(diag(d));
+uu = u(:, minIdx);
 epipole = uu / uu(3)
 
+% Right epipole
+[u2,d2] = eigs(F*F');
+[minVal2, minIdx2] = min(diag(d2));
+uu2 = u2(:, minIdx2);
 
-% imwrite(rectLeft, 'rectifiedLeft.png');
-% imwrite(rectRight, 'rectifiedRight.png');
-
-% figure;
-% showMatchedFeatures(leftImg, rightImg, stereoParam(:, 1:2), stereoParam(:, 3:4));
-% 
+epipole2 = uu2 / uu2(3)
 
 
