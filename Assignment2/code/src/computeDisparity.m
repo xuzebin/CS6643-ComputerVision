@@ -6,10 +6,8 @@ close all;
 format long;
 
 % Read image stereo pair
-% Here we deliberatly swap the left and right images to find match points
-% more easily.
-L = imread('../res/cubeR.JPG');
-R = imread('../res/cubeL.JPG');
+L = imread('../res/cubeL.JPG');
+R = imread('../res/cubeR.JPG');
 
 
 % Convert to grayscale
@@ -99,7 +97,7 @@ for i=1:keyPointsNum
     z = f * B / (double(bestMatchCol - samplex) * pixelSize);
     
     % Draw the text beside the key point
-%     text(double(bestMatchCol), double(sampley), sprintf('%0.5f', z * 0.1), 'HorizontalAlignment', 'center');
+%      text(double(bestMatchCol), double(sampley), sprintf('%0.5f', z * 0.1), 'HorizontalAlignment', 'center');
     
     % Calculate x, y coordinates u=fx/z, v=fy/z => x=uz/f, y=vz/f.
 %     a = double(f / pixelSize);

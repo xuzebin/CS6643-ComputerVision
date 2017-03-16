@@ -2,11 +2,8 @@ function [bestMatch, correlation] = findMatchPointFromStereoPair(leftPoint, imgL
 % Find the matched right point using normalized cross correlation for one point in the left.
 %
 % The pipeline is optimized to reduce the time complexity of NCC.
-% 1. Left and Right images are replaced ([left, right]->[right->left]) so that the point in the left image
-% is on the left relative to the corresponding point in the right image. This means that we don't have to 
-% search the corresponding point in the right image before the position of the current point in the left.
-% 2. For each pixel(u1,v1) in the left image, find corresponding pixels (windows) in the right image
-% starting from (u2=u1, v2=v1) and increase v2 up to (v1 + DISPARITY_MAX)
+% 1. For each pixel(u1,v1) in the left image, find corresponding pixels (windows) in the right image
+% starting from (u2=u1, v2=v1) and decreases v2 down to (v1 - DISPARITY_MAX)
 % manually set by user (Experimentally, we can find the maximum disparity
 % by mannually selecting a few correspongding closest pixels and compute their
 % disparities). In this way, we only need to compare DISPARITY_MAX number
@@ -67,10 +64,11 @@ function [bestMatch, correlation] = findMatchPointFromStereoPair(leftPoint, imgL
     % Compare w with w2 on the same line in right image.
     maxCorrelation = eps(0);
     bestMatch = j;
-    for k = j:min(j + maxDisparity, imgCol)
+    
+    for k = j:-1:max(j - maxDisparity, 1)
         colStart2 = k;
         colEnd2 = k + winCol - 1;
-
+    
         % Construct w2 (vector of the right window)
         w2 = paddedR(rowStart:rowEnd, colStart2:colEnd2);
         w2 = w2(:);
