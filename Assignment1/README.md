@@ -1,0 +1,2 @@
+# Camera Calibration
+Calibrate a digital camera with two orthogonal checkerboard patterns and find the intrinsic and extrinsic parameters so as to be able to capture images of objects from known locations and with a known camera model.
