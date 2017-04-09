@@ -89,6 +89,6 @@ end
 figure;
 % Normalize
 disparityMap = double(disparityMap) ./ double(max(disparityMap(:)));
-imshow(normDisMap);
+imshow(disparityMap)
 
 
