@@ -10,21 +10,22 @@ format long;
 % Recalculation may take long, we can read from precalculated results
 RECAL = true;
 
-% Read light source directions from a csv file.
-% The file has the format: imgFile, x, y, z
-% where x, y, z is the light source direction of the imgFile.
+% filePath = '../res/synth-images/';
+% filePath = '../res/sphere-images/';
+filePath = '../res/dog-images/';
+
+% Read file names and light source directions from a csv file.
+% Each row in the file is: imageFileName, x, y, z
+% where x, y, z is the light source direction of the corresponding image.
 % For example:
 % im1.png, 0, 0, 1
-lightDirs = readtable('../res/dog-images/light_directions.csv');
-
-% Read all images of different illumination from a directory
-imgPath = '../res/dog-images/';
-imgType = '*.png';
-imgFiles = dir([imgPath imgType]);
-num = length(imgFiles);
+% This means that the image named im1.png has a light direction [0 0 1]
+lightSrcFile = strcat(filePath, 'light_directions.csv');
+table = readtable(lightSrcFile);
+num = size(table, 1);
 
 % Check if images exist
-if( ~exist(imgPath, 'dir') || num < 1 )
+if( ~exist(filePath, 'dir') || num < 1 )
     error('Directory not found or no matching images found.');
 end
 
@@ -37,14 +38,16 @@ imgs(num).dir = zeros(3, 1);
 % The vector order in light_directions.csv file must correspond to
 % that of imgFiles.
 for i=1:num
-    imgs(i).data = imread([imgPath imgFiles(i).name]);
+    fileName = char(table2array(table(i, 1)));    
+    imgs(i).data = imread([filePath fileName]);
     % If not grayscaled, convert it to grayscale
     if (size(imgs(i).data, 3) > 1)
         imgs(i).data = rgb2gray(imgs(i).data);
     end
     % Normalize the images to [0, 1]
-    imgs(i).data = im2double(imgs(i).data);    
-    imgs(i).dir = lightDirs(i, 2:4);
+    imgs(i).data = im2double(imgs(i).data);
+    % Store light source direction
+    imgs(i).dir = table(i, 2:4);
 end
 
 % Iterate every point of the image
@@ -85,7 +88,13 @@ if (RECAL)
             
             gvec = [g(r,c,1); g(r,c,2); g(r,c,3)];
             albedo(r, c) = norm(gvec);
-            normals(r, c, 1:3) = gvec / albedo(r, c);
+            if (albedo(r, c) == 0)
+                normals(r, c, 1:3) = [0;0;0];
+            else
+                normals(r, c, 1:3) = gvec / albedo(r, c);
+            end
+            
+            
         end
     end    
     size(normals)
@@ -114,19 +123,20 @@ title('Albedo map');
 
 % 2D surface normal map
 figure;
-spacing = 10;
+spacing = 4;
 [x, y] = meshgrid(1:spacing:row, 1:spacing:col);
 quiver(x,y, normals(1:spacing:end, 1:spacing:end, 1),normals(1:spacing:end, 1:spacing:end, 2));
 axis tight;
 axis square;
 title('Normal map');
 
-% 3 components (x,y,z) of normalized surface normal vector
+% 3 components (x,y,z) of the normalized surface normal vector
 figure;
 subplot(1,3,1);imshow(normals(1:end, 1:end, 1));
 subplot(1,3,2);imshow(normals(1:end, 1:end, 2));
 subplot(1,3,3);imshow(normals(1:end, 1:end, 3));
-title('Surface normal vector in x, y, z');
+suptitle('x, y, z components of the normalized surface normal vector');
+truesize;
 
 % New shaded image with a new light source direction (1,2,3)
 lightSrc = [1;2;3];
@@ -134,7 +144,6 @@ lightSrc = lightSrc / norm(lightSrc);
 newShaded = zeros(row, col);
 for r=1:row
     for c=1:col
-%         newShaded(r, c) = dot(albedo(r, c) * [normals(r, c, 1);normals(r, c, 2);normals(r, c, 3)], lightSrc);
         newShaded(r, c) = dot([g(r,c,1); g(r,c,2); g(r,c,3)], lightSrc);
     end
 end
@@ -144,25 +153,29 @@ imshow(newShaded);
 title('New shaded image');
 
 
-
 % p=dz/dx, q=dz/dy
 p = zeros(row, col);
 q = zeros(row, col);
 for r=1:row
     for c=1:col
-%         g = albedo(r, c) * [normals(r, c, 1);normals(r, c, 2);normals(r, c, 3)];   
         if (g(r, c, 3) == 0)
-            p(r, c) = 1;
-            q(r, c) = 1;
+            p(r, c) = 0;
+            q(r, c) = 0;
         else
             p(r, c) = g(r, c, 1) / g(r, c, 3);
             q(r, c) = g(r, c, 2) / g(r, c, 3);
-            str = [num2str(g(r,c,1)), ' / ', num2str(g(r,c,3)), ' = ',num2str(p(r,c))];
-            disp(str);
-        end
+        end        
     end
 end
 
+% Check (dp/dy - dq/dx)^2 is small enough
+for r=2:row
+    for c=2:col
+        dpdy = p(r, c) - p(r, c - 1);
+        dqdx = q(r, c) - q(r - 1, c);
+        error = (dpdy - dqdx).^2;
+    end
+end
 
 % Integration: Reconstruct height surface
 
@@ -172,25 +185,11 @@ if (RECAL)
 
     % Integrate along the first column (y)
     for r=2:row
-%         g = albedo(r, 1) * [normals(r, 1, 1);normals(r, 1, 2);normals(r, 1, 3)];
-%         if (g(r, c, 3) ~= 0)
-%             p = g(r, c, 1) / g(r, c, 3);
-%             q = g(r, c, 2) / g(r, c, 3);
-%         else
-%             q = 0;        
-%         end
         depth(r, 1) = depth(r - 1, 1) + q(r, 1);
     end
     % Integrate along each row (x)
     for r=1:row
         for c=2:col
-%             g = albedo(r, c) * [normals(r, c, 1);normals(r, c, 2);normals(r, c, 3)];
-%             if (g(r, c, 3) ~= 0)
-%                 p = g(r, c, 1) / g(r, c, 3);
-%                 q = g(r, c, 2) / g(r, c, 3);
-%             else
-%                 p = 0;
-%             end
             depth(r, c) = depth(r, c - 1) + p(r, c);
         end    
     end
@@ -209,13 +208,13 @@ title('Depth map');
 % Render surface
 [x, y] = meshgrid(1:row, 1:col);
 figure;
-surf(x, y, depth, 'EdgeColor', 'none');
+surf(-x,-y, depth, 'EdgeColor', 'none');
 camlight left;
 lighting phong;
 title('Surface');
 
 % Render the mesh
 figure;
-mesh(x, y, depth);
+mesh(-x, -y, depth);
 title('Mesh');
 
