@@ -1,4 +1,4 @@
-% Compute height map given p and q using naive integration.
+%% Compute height map given p and q using naive integration.
 %
 % Usage:     z = computeHeightMap(p, q, mask)
 %
@@ -9,6 +9,9 @@
 %            the noise of height map can be reduced significantly.
 %
 % Returns:   z - a 2D matrix giving the surface heights.
+%
+% Author: Zebin Xu (zebinxu@nyu.edu)
+%%
 function z = computeHeightMap(p, q, mask)
     if ~all(size(p) == size(q))
       error('p and q matrices must match');

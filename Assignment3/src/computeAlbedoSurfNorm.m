@@ -1,4 +1,4 @@
-% Compute albedo and surface normal given images and corresponding light
+%% Compute albedo and surface normal given images and corresponding light
 % source vectors using least-square method.
 %
 % Usage:     [albedo, normal] = computeAlbedoSurfNorm(images, V)
@@ -9,7 +9,10 @@
 %                      where m is the number of images.
 %
 % Returns:   albedo - a 2D matrix with the albedo for each point on the image.
-%            normal - a rowxcolx3 matrix with the 3d normal vector for each point.
+%           normal - a rowxcolx3 matrix with the 3d normal vector for each point.
+%
+% Author: Zebin Xu (zebinxu@nyu.edu)
+%%
 function [albedo, normal] = computeAlbedoSurfNorm(images, V)
 
 if (size(images, 1) < 3)

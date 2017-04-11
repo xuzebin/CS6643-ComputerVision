@@ -1,3 +1,21 @@
+%% PHOTOMETRIC STEREO ASSIGNMENT
+% Estimate albedo, surface normal and reconstruct surface (shape) using at least 3 images under different illuminations. 
+% Assume Lambertian surface reflectance is used.
+%
+% It shows:
+% 1. Albedo map
+% 2. 2D normal vectors
+% 3. xyz components of normal vector
+% 4. New shaded image with a new chosen light source
+% 5. Height map
+% 6. Reconstructed Surface
+% 7. Reconstructed mesh
+% Note:
+% Under each image directory there must be a csv file named 'light_directions.csv' describing the
+% mapping of image filename and light source vector.
+%
+% Author: Zebin Xu (zebinxu@nyu.edu)
+%%
 clc; 
 close all;
 format long;
@@ -6,6 +24,7 @@ format long;
 % filePath = '../res/sphere-images/';
 filePath = '../res/dog-images/';
 
+%% Parse csv file and preprocess and store corresponding images and light source vectors
 % Read file names and light source directions from a csv file.
 % Each row in the file is: imageFileName, x, y, z
 % where x, y, z is the light source direction of the corresponding image.
@@ -47,13 +66,15 @@ end
 % Get the size of the image.
 [row, col] = size(imgs{1});
 
+%% Compute albedo and surface normal from multiple images and corresponding light source direction vectors
 [albedo, normal] = computeAlbedoSurfNorm(imgs, lightSrcDir);
 
-% Albedo map
+%% Estimated albedo map
 figure;
 imshow(albedo);
 title('Albedo map');
 
+%% Estimated surface normals
 % 2D surface normal vectors
 figure;
 spacing = 6;
@@ -63,7 +84,7 @@ axis tight;
 axis square;
 title('Normal vectors');
 
-% 3 components (x,y,z) of the normalized surface normal vector
+% x, y, z components of the normalized surface normal vector
 figure;
 subplot(1,3,1);imshow(normal(1:end, 1:end, 1));
 subplot(1,3,2);imshow(normal(1:end, 1:end, 2));
@@ -71,11 +92,27 @@ subplot(1,3,3);imshow(normal(1:end, 1:end, 3));
 suptitle('x, y, z components of the normalized surface normal vector');
 truesize;
 
-% Get p, q from normal
-% Preallocte p and q (p=dz/dx, q=dz/dy)
+% New shaded image with a new light source direction (1,2,3)
+lightSrc = [1;2;3];
+lightSrc = lightSrc / norm(lightSrc);
+newShaded = zeros(row, col);
+for r=1:row
+    for c=1:col
+        g = [normal(r, c, 1) * albedo(r, c); 
+             normal(r, c, 2) * albedo(r, c); 
+             normal(r, c, 3) * albedo(r, c)];
+        newShaded(r, c) = dot(g, lightSrc);
+    end
+end
+
+figure;
+imshow(newShaded);
+title('New shaded image with light source vector [1 2 3]');
+
+%% Compute p, q (p=dz/dx, q=dz/dy)
+% Preallocte p and q 
 p = zeros(row, col);
 q = zeros(row, col);
-
 for r=1:row
     for c=1:col
          % Compute p (dzdx) and q (dzdy)
@@ -99,23 +136,6 @@ for r=1:row
     end
 end
 
-% New shaded image with a new light source direction (1,2,3)
-lightSrc = [1;2;3];
-lightSrc = lightSrc / norm(lightSrc);
-newShaded = zeros(row, col);
-for r=1:row
-    for c=1:col
-        g = [normal(r, c, 1) * albedo(r, c); 
-             normal(r, c, 2) * albedo(r, c); 
-             normal(r, c, 3) * albedo(r, c)];
-        newShaded(r, c) = dot(g, lightSrc);
-    end
-end
-
-figure;
-imshow(newShaded);
-title('New shaded image with light source vector [1 2 3]');
-
 % Create a mask used to distinguish the object from background.
 bw = im2bw(albedo, 0);
 mask = imfill(bw, 'holes');
@@ -124,8 +144,10 @@ figure;
 imshow(mask);
 title('mask');
 
+%% Reconstruct height surface via integration
 % Naive integration (TV-scan)
 %z = computeHeightMap(p, q, mask);
+
 % frankotchellappa's method
 z = frankotchellappa(p, q);
 
@@ -133,6 +155,7 @@ z = frankotchellappa(p, q);
 % We need to reverse the sign here.
 z = -z;
 
+%% Show reconstructed surface
 % Height map
 figure;
 % Convert height matrix to grayscale image
