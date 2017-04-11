@@ -2,11 +2,11 @@
 %
 % Usage:     z = computeHeightMap(p, q, mask)
 %
-% Arguments: p    - dz/dx, a 2D matrix giving the partial derivative in x direction.
-%            q    - dz/dy, a 2D matrix giving the partial derivative in y direction.
+% Arguments: p    - dz/dx, a 2D matrix giving the partial derivative (gradience) in x direction.
+%            q    - dz/dy, a 2D matrix giving the partial derivative (gradience) in y direction.
 %            mask - a binary image describing the 2d shape of the object, 1
-%            indicates the object and 0 indicates the background. With this mask
-%            the noise of height map can be reduced significantly.
+%                   indicates the object and 0 indicates the background. With this mask
+%                   the noise of height map can be reduced significantly.
 %
 % Returns:   z - a 2D matrix giving the surface heights.
 %
@@ -45,3 +45,14 @@ function z = computeHeightMap(p, q, mask)
         end                     
     end
     
+    % Set background to the lowest height
+    lowest = min(z(:));    
+    for r=1:row
+        for c=1:col
+            if mask(r, c) > 0            
+                z(r, c) = z(r, c) - lowest;
+            else
+                z(r, c) = lowest;
+            end
+        end                     
+    end
