@@ -92,6 +92,10 @@ subplot(1,3,3);imshow(normal(1:end, 1:end, 3));
 suptitle('x, y, z components of the surface normal vector');
 truesize;
 
+% Normal map
+figure;
+imshow(normal);
+
 % New shaded image with a new light source direction (1,2,3)
 lightSrc = [1;2;3];
 lightSrc = lightSrc / norm(lightSrc);
@@ -137,16 +141,19 @@ for r=1:row
     end
 end
 
-% Create a mask used to distinguish the object from background.
-bw = im2bw(albedo, 0);
+% Create a mask used to segment the object from background.
+% bw = im2bw(albedo, 0.9);
+bw = imbinarize(albedo);
 mask = imfill(bw, 'holes');
+imshow(mask);
+title('mask');
 
 %% Reconstruct height surface via integration
 % Naive integration (TV-scan)
-z = computeHeightMap(p, q, mask);
+% z = computeHeightMap(p, q, mask);
 
 % frankotchellappa's method
-%z = frankotchellappa(p, q);
+z = frankotchellappa(p, q);
 
 %% Show reconstructed surface
 % Height map

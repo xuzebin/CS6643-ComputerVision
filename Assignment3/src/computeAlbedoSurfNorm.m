@@ -43,7 +43,7 @@ for r=1:row
 %         g = pinv(T * V) * (T * i);
         g = pinv(V) * (i);
 
-        albedo(r, c) = norm(g);        
+        albedo(r, c) = norm(g);
         if (albedo(r, c) > 1)
             albedo(r, c) = 1;
             normal(r, c, 1:3) = g / albedo(r, c);
@@ -51,6 +51,17 @@ for r=1:row
             normal(r, c, 1:3) = [0; 0; 0];
         else
             normal(r, c, 1:3) = g / albedo(r, c);
-        end        
+        end
     end        
 end
+% Create a mask
+% For synthetic images, do not apply this mask
+% mask = imbinarize(albedo);
+% figure;imshow(mask);
+% for r=1:row
+%     for c=1:col
+%         if (mask(r, c) == 0)
+%             normal(r, c, :) = [0; 0; 0];
+%         end
+%     end
+% end
