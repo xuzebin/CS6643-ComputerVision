@@ -28,7 +28,7 @@ function z = computeHeightMap(p, q, mask)
     
     % Integrate along the first column (y)
     for r=2:row
-        if mask(r, 1) > 0            
+        if mask(r, 1) > 0 % In the mask        
             z(r, 1) = z(r - 1, 1) + q(r, 1);
         else
             z(r, 1) = 0;
@@ -37,7 +37,7 @@ function z = computeHeightMap(p, q, mask)
     % Integrate along each row (x)    
     for r=1:row
         for c=2:col
-            if mask(r, c) > 0            
+            if mask(r, c) > 0 % In the mask         
                 z(r, c) = z(r, c - 1) + p(r, c); 
             else
                 z(r, c) = 0;

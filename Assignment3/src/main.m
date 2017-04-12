@@ -5,7 +5,7 @@
 % It shows:
 % 1. Albedo map
 % 2. 2D normal vectors
-% 3. xyz components of normal vector
+% 3. xyz components of the surface normal vector
 % 4. New shaded image with a new chosen light source
 % 5. Height map
 % 6. Reconstructed Surface
@@ -82,14 +82,14 @@ spacing = 6;
 quiver(x,y, normal(1:spacing:end, 1:spacing:end, 1),normal(1:spacing:end, 1:spacing:end, 2));
 axis tight;
 axis square;
-title('Normal vectors');
+title('2D Normal vectors');
 
-% x, y, z components of the normalized surface normal vector
+% x, y, z components of the surface normal vector
 figure;
 subplot(1,3,1);imshow(normal(1:end, 1:end, 1));
 subplot(1,3,2);imshow(normal(1:end, 1:end, 2));
 subplot(1,3,3);imshow(normal(1:end, 1:end, 3));
-suptitle('x, y, z components of the normalized surface normal vector');
+suptitle('x, y, z components of the surface normal vector');
 truesize;
 
 % New shaded image with a new light source direction (1,2,3)
@@ -113,6 +113,7 @@ title('New shaded image with light source vector [1 2 3]');
 % Preallocte p and q 
 p = zeros(row, col);
 q = zeros(row, col);
+
 for r=1:row
     for c=1:col
          % Compute p (dzdx) and q (dzdy)
@@ -120,8 +121,8 @@ for r=1:row
             p(r, c) = 0;
             q(r, c) = 0;
          else
-            p(r, c) = normal(r, c, 1) / normal(r, c, 3);
-            q(r, c) = normal(r, c, 2) / normal(r, c, 3);
+            p(r, c) = -normal(r, c, 1) / normal(r, c, 3);
+            q(r, c) = -normal(r, c, 2) / normal(r, c, 3);
          end
 
         % Check if (dp/dy - dq/dx)^2 is small enough
@@ -140,20 +141,12 @@ end
 bw = im2bw(albedo, 0);
 mask = imfill(bw, 'holes');
 
-figure;
-imshow(mask);
-title('mask');
-
 %% Reconstruct height surface via integration
 % Naive integration (TV-scan)
-%z = computeHeightMap(p, q, mask);
+z = computeHeightMap(p, q, mask);
 
 % frankotchellappa's method
-z = frankotchellappa(p, q);
-
-% Since our camera is looking down from positive z position
-% We need to reverse the sign here.
-z = -z;
+%z = frankotchellappa(p, q);
 
 %% Show reconstructed surface
 % Height map
@@ -171,7 +164,7 @@ camlight left;
 lighting phong;
 title('Surface');
 
-% Render the mesh
+% Render the wireframe mesh
 figure;
 mesh(x, y, z);
-title('Mesh');
+title('Wireframe Mesh');

@@ -9,7 +9,7 @@
 %                      where m is the number of images.
 %
 % Returns:   albedo - a 2D matrix with the albedo for each point on the image.
-%           normal - a rowxcolx3 matrix with the 3d normal vector for each point.
+%            normal - a rowxcolx3 matrix with the 3D normalized surface normal for each point.
 %
 % Author: Zebin Xu (zebinxu@nyu.edu)
 %%
@@ -34,22 +34,23 @@ normal = zeros(row, col, 3);
 
 % Calculate albedo and normal for each point
 for r=1:row
-    for c=1:col
+    for c=1:col     
         % Stack image pixel values for different images into a vector
         i = [images{1}(r, c);images{2}(r, c);images{3}(r, c);images{4}(r, c)];
+        
+        % It is found that removing the diagonal matrix T has a better result        
+%         T = diag(i);
+%         g = pinv(T * V) * (T * i);
+        g = pinv(V) * (i);
 
-        g = (V.' * V) \ (V.' * i);
-    
-        albedo(r, c) = norm(g);
+        albedo(r, c) = norm(g);        
         if (albedo(r, c) > 1)
             albedo(r, c) = 1;
             normal(r, c, 1:3) = g / albedo(r, c);
-        elseif (albedo(r, c) == 0)
-            albedo(r, c) = 0;
-            normal(r, c, 1:3) = g;
+        elseif (albedo(r, c) == 0)       
+            normal(r, c, 1:3) = [0; 0; 0];
         else
             normal(r, c, 1:3) = g / albedo(r, c);
-        end
-        
-    end
+        end        
+    end        
 end
